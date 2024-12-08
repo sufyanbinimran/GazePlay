@@ -1,132 +1,273 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  TouchableOpacity, 
+  Modal, 
+  TextInput, 
+  Alert, 
+  FlatList, 
+  Platform 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+
+
+const apiBaseURL = Platform.select({
+  ios: 'http://localhost:5001',
+  android: 'http://10.0.2.2:5001',
+  default: 'http://localhost:5001'
+});
+
+
+const validatePhoneNumber = (phoneNumber) => {
+  const cleanedNumber = phoneNumber.replace(/\D/g, '');
+
+
+  const pakistaniNumberRegex = /^92\d{10}$/;
+
+  if (!pakistaniNumberRegex.test(cleanedNumber)) {
+    const possibleFormats = /^(?:0092|\+92|0)?(3\d{9})$/;
+    const match = phoneNumber.match(possibleFormats);
+    if (match) {
+     
+      const formattedNumber = `+92${match[1]}`;
+      return {
+        isValid: true,
+        formattedNumber: formattedNumber,
+        error: null
+      };
+    }
+    return {
+      isValid: false,
+      formattedNumber: null,
+      error: 'Invalid Pakistani phone number. Must be in the format +923XXYYYYYYY.'
+    };
+  }
+
+  
+  const formattedNumber = `+92 ${cleanedNumber.slice(2, 5)} ${cleanedNumber.slice(5)}`;
+  return {
+    isValid: true,
+    formattedNumber: formattedNumber,
+    error: null
+  };
+};
 
 export default function QuickContacts() {
-  const [contacts, setContacts] = useState([
-    {
-      id: 1,
-      name: 'Father',
-      phone: '+92 300 1234567',
-      iconName: 'phone',
-      backgroundColor: '#4CAF50',
-    },
-    {
-      id: 2,
-      name: 'Mother',
-      phone: '+92 342 7654321',
-      iconName: 'heart',
-      backgroundColor: '#E91E63',
-    }
-  ]);
-
+  const navigation = useNavigation();
+  const [contacts, setContacts] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [newContact, setNewContact] = useState({ name: '', phone: '' });
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const countryCodes = {
-    Pakistan: '+92',
-    India: '+91',
-    Bangladesh: '+880',
-    United_States: '+1',
-    United_Kingdom: '+44',
-  };
-
-  const validatePhoneNumber = (phone, countryCode) => {
-    const phoneRegex = {
-      '+92': /^(\+92|0)?3\d{9}$/, // Pakistan: 11 digits starting with 03
-      '+91': /^(\+91|0)?[6-9]\d{9}$/, // India: 10 digits starting with 6-9
-      '+880': /^(\+880|0)?1\d{9}$/, // Bangladesh: 11 digits starting with 01
-      '+1': /^(\+1|0)?[2-9]\d{9}$/, // US: 10 digits
-      '+44': /^(\+44|0)?[7-9]\d{9}$/ // UK: 10 digits
+  // Load  token
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (storedToken) {
+          setToken(storedToken);
+        }
+      } catch (error) {
+        console.error('Error loading token:', error);
+        Alert.alert('Authentication Error', 'Failed to load authentication token');
+      } finally {
+        setIsLoading(false);
+      }
     };
+    loadToken();
+  }, []);
 
-    return phoneRegex[countryCode] ? phoneRegex[countryCode].test(phone.replace(/\s/g, '')) : false;
-  };
+  // Fetch contacts 
+  useEffect(() => {
+    const fetchContacts = async () => {
+      if (!token) return;
+      
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`${apiBaseURL}/contacts`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        
+        console.log('Fetched contacts response:', response.data);
+        
+        if (response.data.status === 'ok') {
+          setContacts(response.data.data || []);
+        } else {
+          Alert.alert('Error', 'Failed to fetch contacts');
+        }
+      } catch (error) {
+        console.error('Fetch contacts error:', error.response ? error.response.data : error.message);
+        Alert.alert('Error', 'Failed to fetch contacts');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchContacts();
+  }, [token]);
 
-  const addContact = () => {
-    const { name, phone } = newContact;
-    const countryCode = Object.values(countryCodes).find(code => phone.startsWith(code));
+  const addContact = async () => {
+    if (!newContact.name || !newContact.phone) {
+        Alert.alert('Error', 'Please enter both name and phone number');
+        return;
+    }
 
-    if (!name || !phone) {
-      Alert.alert('Error', 'Please enter both name and phone number');
+    const { isValid, formattedNumber, error } = validatePhoneNumber(newContact.phone);
+    if (!isValid) {
+        Alert.alert('Invalid Phone Number', error);
+        return;
+    }
+
+    // Check existing phone number 
+    const duplicate = contacts.some(contact => contact.phoneNumber === formattedNumber);
+    if (duplicate) {
+        Alert.alert('Duplicate Error', 'This phone number already exists in your contacts.');
+        return;
+    }
+
+    if (!token) {
+        Alert.alert('Error', 'Authentication token not found');
+        return;
+    }
+
+    try {
+        const response = await axios.post(`${apiBaseURL}/contacts`, 
+            { name: newContact.name, phoneNumber: formattedNumber }, 
+            { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        );
+
+        if (response.data.status === 'ok') {
+            // Add the new contact in list
+            setContacts(prevContacts => [...prevContacts, { ...response.data.data, phoneNumber: formattedNumber }]);
+            setNewContact({ name: '', phone: '' });  
+            setModalVisible(false); 
+            Alert.alert('Success', 'Contact added successfully');
+        } else {
+            Alert.alert('Error', response.data.data || 'Failed to add contact');
+        }
+    } catch (error) {
+        console.error('Add contact error:', error.response ? error.response.data : error.message);
+        Alert.alert('Error', 'Failed to add contact');
+    }
+};
+
+
+ 
+  const deleteContact = async (contactId) => {
+    if (!token) {
+      Alert.alert('Error', 'No authentication token found');
       return;
     }
 
-    if (!countryCode || !validatePhoneNumber(phone, countryCode)) {
-      Alert.alert('Error', 'Invalid phone number format');
-      return;
+    try {
+      const response = await axios.delete(`${apiBaseURL}/contacts/${contactId}`, { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+
+      if (response.data.status === 'ok') {
+        setContacts(contacts.filter(contact => contact._id !== contactId));
+        Alert.alert('Success', 'Contact deleted successfully');
+      } else {
+        Alert.alert('Error', 'Failed to delete contact');
+      }
+    } catch (error) {
+      console.error('Delete contact error:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', 'Failed to delete contact');
     }
-
-    const newContactItem = {
-      id: contacts.length + 1,
-      name,
-      phone,
-      iconName: 'account-plus',
-      backgroundColor: `#${Math.floor(Math.random()*16777215).toString(16)}`,
-    };
-
-    setContacts([...contacts, newContactItem]);
-    setNewContact({ name: '', phone: '' });
-    setModalVisible(false);
   };
 
-  const dialContact = (contact) => {
-    console.log(`Dialing ${contact.name} at ${contact.phone}`);
-    // Implement actual dialing logic here
-  };
+  
+  const renderContactItem = ({ item }) => (
+    <View style={styles.contactCard}>
+      <TouchableOpacity 
+        style={styles.contactContent} 
+        onPress={() => {
+          console.log(`Dialing ${item.name}`);
+        }}
+      >
+        <Icon name="phone" size={24} color="#ffffff" />
+        <View style={styles.contactTextContainer}>
+          <Text style={styles.contactName}>{item.name}</Text>
+          <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.deleteIcon} 
+        onPress={() => {
+          Alert.alert(
+            'Delete Contact', 
+            `Are you sure you want to delete ${item.name}?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: () => deleteContact(item._id) }
+            ]
+          );
+        }}
+      >
+        <Icon name="delete" size={24} color="#FF0000" />
+      </TouchableOpacity>
+    </View>
+  );
 
+  // Render
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Quick Contacts</Text>
         <TouchableOpacity 
-          style={styles.addButton}
+          style={styles.addButton} 
           onPress={() => setModalVisible(true)}
         >
           <Icon name="plus" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.contactsContainer}>
-        {contacts.map((contact) => (
-          <TouchableOpacity
-            key={contact.id}
-            style={[styles.contactCard, { backgroundColor: contact.backgroundColor }]}
-            onPress={() => dialContact(contact)}
-          >
-            <View style={styles.contactContent}>
-              <View style={styles.iconContainer}>
-                <Icon name={contact.iconName} size={24} color="#ffffff" />
-              </View>
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>{contact.name}</Text>
-                <Text style={styles.contactPhone}>{contact.phone}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text>Loading contacts...</Text>
+        </View>
+      ) : contacts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text>No contacts found. Add a new contact!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={contacts}
+          renderItem={renderContactItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.contactsContainer}
+        />
+      )}
 
-      <Modal
+      {/* Add Contact Modal */}
+      <Modal 
+        visible={isModalVisible} 
+        animationType="slide" 
         transparent={true}
-        visible={isModalVisible}
-        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add New Contact</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={newContact.name}
-              onChangeText={(text) => setNewContact({...newContact, name: text})}
+            <TextInput 
+              style={styles.input} 
+              placeholder="Name" 
+              value={newContact.name} 
+              onChangeText={(text) => setNewContact({ ...newContact, name: text })} 
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number (+92 300 1234567)"
-              value={newContact.phone}
-              onChangeText={(text) => setNewContact({...newContact, phone: text})}
-              keyboardType="phone-pad"
+            <TextInput 
+              style={styles.input} 
+              placeholder="Phone Number" 
+              value={newContact.phone} 
+              onChangeText={(text) => setNewContact({ ...newContact, phone: text })} 
+              keyboardType="phone-pad" 
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -149,64 +290,62 @@ export default function QuickContacts() {
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f4f4f4',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
+    padding: 15,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   addButton: {
     padding: 10,
   },
   contactsContainer: {
-    padding: 16,
+    paddingHorizontal: 15,
+    paddingTop: 10,
   },
   contactCard: {
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    flexDirection: 'row',
+    backgroundColor: '#007bff',
+    borderRadius: 10,
+    marginBottom: 10,
+    overflow: 'hidden',
   },
   contactContent: {
-    padding: 20,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 15,
   },
-  iconContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 16,
-  },
-  contactInfo: {
-    flex: 1,
+  contactTextContainer: {
+    marginLeft: 15,
   },
   contactName: {
-    fontSize: 20,
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
   },
   contactPhone: {
+    color: '#e0e0e0',
     fontSize: 14,
-    color: '#ffffff',
-    opacity: 0.9,
+  },
+  deleteIcon: {
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
   },
   modalContainer: {
     flex: 1,
@@ -222,17 +361,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 15,
+    borderColor: '#e0e0e0',
     borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -242,7 +381,7 @@ const styles = StyleSheet.create({
   modalButton: {
     padding: 10,
     borderRadius: 5,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#007bff',
     width: '45%',
     alignItems: 'center',
   },
@@ -250,4 +389,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });

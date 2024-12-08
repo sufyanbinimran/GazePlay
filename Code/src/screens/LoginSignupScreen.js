@@ -1,41 +1,39 @@
-// Import necessary components and libraries
 import React, { useState } from 'react';
 import { View, Text, TextInput,  Button, StyleSheet,  TouchableOpacity, Alert 
 } 
 from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Main component declaration
+
 export default function LoginSignupScreen({ route, navigation }) {
-  // Get userType from navigation params
+
   const { userType } = route.params;
-  
-  // State declarations
-  // Screen control states
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isVerification, setIsVerification] = useState(false);
   
-  // Form input states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   
-  // Error states
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   
-  // Loading state
+
   const [isLoading, setIsLoading] = useState(false);
   
-  // Temporary storage for user data during verification
+  
   const [tempUserData, setTempUserData] = useState(null);
 
-  // Convert userType to lowercase for API requests
+  
   const role = userType.toLowerCase();
 
-  // Email validation function
+  
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
@@ -52,86 +50,97 @@ export default function LoginSignupScreen({ route, navigation }) {
     setEmailError('');
     return true;
   };
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    lowercase: false,
+    uppercase: false,
+    number: false,
+    specialChar: false
+  }); 
 
-  // Password validation function
+  
   const validatePassword = (password) => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~`!@#$%^&*()-_+={}[\]|\\;:"<>,./?])[A-Za-z\d~`!@#$%^&*()-_+={}[\]|\\;:"<>,./?]{8,}$/;
-    
-    if (!password) {
-      setPasswordError('Password is required');
+    const minLength = password.length >= 8;
+    const lowercase = /[a-z]/.test(password);
+    const uppercase = /[A-Z]/.test(password);
+    const number = /\d/.test(password);
+    const specialChar = /[~`!@#$%^&*()+\-=\[\]{};':"\\|,.<>\/?_]/.test(password);
+  
+    setPasswordRequirements({
+      minLength,
+      lowercase,
+      uppercase,
+      number,
+      specialChar
+    });
+  
+    if (minLength && lowercase && uppercase && number && specialChar) {
+      setPasswordError('');
+      return true;
+    } else {
+      setPasswordError('Please fulfill all password requirements.');
       return false;
     }
-    
-    if (!passwordRegex.test(password)) {
-      setPasswordError(
-        'Password must contain:\n' +
-        '• At least 1 lowercase letter\n' +
-        '• At least 1 uppercase letter\n' +
-        '• At least 1 number\n' +
-        '• At least 1 special character\n' +
-        '• Minimum 8 characters'
-      );
-      return false;
-    }
-    
-    setPasswordError('');
-    return true;
   };
 
-  // Handle real-time password validation
+  
   const handlePasswordChange = (text) => {
     setPassword(text);
     validatePassword(text);
   };
 
-  // Handle real-time email validation
+  
   const handleEmailChange = (text) => {
     setEmail(text);
     validateEmail(text);
   };
 
-  // Handle login submission
-  const handleLogin = async () => {
-    // Validate fields
-    const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
-  
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
-  
-    setIsLoading(true);
-    try {
-      const response = await axios.post('http://10.54.15.74:5001/login', {
-        email: email,
-        password: password,
-        loginAsRole: role
-      });
+
+const handleLogin = async () => {
+ 
+  const isEmailValid = validateEmail(email);
+  const isPasswordValid = validatePassword(password);
+
+  if (!isEmailValid || !isPasswordValid) {
+    Alert.alert('Validation Error', 'Please check your email and password');
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const response = await axios.post('http://10.54.5.110:5001/login', {
+      email: email,
+      password: password,
+      loginAsRole: role
+    });
+    
+    if (response.data.status === 'ok') {
+      await AsyncStorage.setItem('userToken', response.data.token);
       
-      if (response.data.status === 'ok') {
-        if (role === 'user') {
-          navigation.replace('UserDashboard');
-        } else if (role === 'guardian') {
-          navigation.replace('GuardianDashboard');
-        } else if (role === 'admin') {
-          navigation.replace('AdminDashboard');
-        }
-        else {
-          Alert.alert('Success', `${userType} logged in successfully`);
-        }
-      } else {
-        Alert.alert('Error', response.data.data || 'Login failed');
+      if (role === 'user') {
+        navigation.replace('UserDashboard');
+      } else if (role === 'guardian') {
+        navigation.replace('GuardianDashboard');
+      } else if (role === 'admin') {
+        navigation.replace('AdminDashboard');
       }
-    } catch (error) {
-      console.error('Login error:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.data || 'An error occurred during login');
-    } finally {
-      setIsLoading(false);
+      else {
+        Alert.alert('Success', `${role} logged in successfully`);
+      }
+    } else {
+      Alert.alert('Error', response.data.data || 'Login failed');
     }
-  };
-  // Handle initial signup attempt
+  } catch (error) {
+    console.error('Login error:', error.response?.data || error.message);
+    Alert.alert('Error', error.response?.data?.data || 'An error occurred during login');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+ 
   const handleSignup = async () => {
-    // Validate all fields
+    
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
@@ -146,20 +155,20 @@ export default function LoginSignupScreen({ route, navigation }) {
 
     setIsLoading(true);
     try {
-      // Request email verification
-      const response = await axios.post('http://10.54.15.74:5001/send-verification', {
+     
+      const response = await axios.post('http://10.54.5.110:5001/send-verification', {
         email: email
       });
       
       if (response.data.status === 'ok') {
-        // Store user data temporarily
+      
         setTempUserData({
           name,
           email,
           password,
           role
         });
-        // Show verification screen
+       
         setIsVerification(true);
         Alert.alert('Success', 'Verification code sent to your email');
       } else {
@@ -173,7 +182,7 @@ export default function LoginSignupScreen({ route, navigation }) {
     }
   };
 
-  // Handle verification and complete signup
+ 
   const handleVerifyAndSignup = async () => {
     if (!verificationCode.trim()) {
       Alert.alert('Error', 'Please enter verification code');
@@ -182,15 +191,15 @@ export default function LoginSignupScreen({ route, navigation }) {
 
     setIsLoading(true);
     try {
-      // First verify the code
-      const verifyResponse = await axios.post('http://10.54.15.74:5001/verify-email', {
+      
+      const verifyResponse = await axios.post('http://10.54.5.110:5001/verify-email', {
         email: tempUserData.email,
         code: verificationCode
       });
 
       if (verifyResponse.data.status === 'ok') {
-        // If verification successful, proceed with registration
-        const registerResponse = await axios.post('http://10.54.15.74:5001/register', {
+      
+        const registerResponse = await axios.post('http://10.54.5.110:5001/register', {
           ...tempUserData,
           isVerified: true
         });
@@ -200,7 +209,7 @@ export default function LoginSignupScreen({ route, navigation }) {
             {
               text: 'OK',
               onPress: () => {
-                // Reset all states and show login screen
+               
                 setIsVerification(false);
                 setIsLogin(true);
                 setEmail('');
@@ -225,7 +234,7 @@ export default function LoginSignupScreen({ route, navigation }) {
     }
   };
 
-  // Handle forgot password request
+  
   const handleForgotPassword = async () => {
     if (!validateEmail(email)) {
       return;
@@ -233,7 +242,7 @@ export default function LoginSignupScreen({ route, navigation }) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post('http://10.54.15.74:5001/forgot-password', {
+      const response = await axios.post('http://10.54.5.110:5001/forgot-password', {
         email: email
       });
 
@@ -262,7 +271,6 @@ export default function LoginSignupScreen({ route, navigation }) {
     }
   };
 
-  // Render verification screen
   const renderVerificationScreen = () => (
     <>
       <Text style={styles.title}>Email Verification</Text>
@@ -281,53 +289,88 @@ export default function LoginSignupScreen({ route, navigation }) {
         />
       </View>
 
-      <Button
-        title={isLoading ? "Verifying..." : "Verify & Complete Signup"}
-        onPress={handleVerifyAndSignup}
-        disabled={isLoading}
-      />
+      <View style={styles.buttonContainer}>
+        {/* Verify & Complete Signup Button */}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            isLoading && styles.disabledButton,
+          ]}
+          onPress={handleVerifyAndSignup}
+          disabled={isLoading}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isLoading && styles.disabledText,
+            ]}
+          >
+            {isLoading ? "Verifying..." : "Verify"}
+          </Text>
+        </TouchableOpacity>
 
-      {/* Resend code button */}
-      <TouchableOpacity 
-        onPress={async () => {
-          setIsLoading(true);
-          try {
-            await axios.post('http://10.54.15.74:5001/send-verification', {
-              email: tempUserData.email
-            });
-            Alert.alert('Success', 'New verification code sent');
-          } catch (error) {
-            Alert.alert('Error', 'Failed to resend verification code');
-          } finally {
-            setIsLoading(false);
-          }
-        }}
-        disabled={isLoading}
-      >
-        <Text style={styles.resendCodeText}>Resend Code</Text>
-      </TouchableOpacity>
+        {/* Resend Code Button */}
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            isLoading && styles.disabledButton,
+          ]}
+          onPress={async () => {
+            setIsLoading(true);
+            try {
+              await axios.post('http://10.54.5.110:5001/send-verification', {
+                email: tempUserData.email
+              });
+              Alert.alert('Success', 'New verification code sent');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to resend verification code');
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+          disabled={isLoading}
+        >
+          <Text
+            style={[
+              styles.secondaryButtonText,
+              isLoading && styles.disabledText,
+            ]}
+          >
+            Resend Code
+          </Text>
+        </TouchableOpacity>
 
-      {/* Back button */}
-      <Button
-        title="Back"
-        onPress={() => {
-          setIsVerification(false);
-          setVerificationCode('');
-          setTempUserData(null);
-        }}
-        disabled={isLoading}
-      />
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.tertiaryButton}
+          onPress={() => {
+            setIsVerification(false);
+            setVerificationCode('');
+            setTempUserData(null);
+          }}
+          disabled={isLoading}
+        >
+          <Text
+            style={[
+              styles.tertiaryButtonText,
+              isLoading && styles.disabledText,
+            ]}
+          >
+            Back
+          </Text>
+        </TouchableOpacity>
+      </View>
     </>
   );
 
-  // Render forgot password screen
+
   const renderForgotPasswordScreen = () => (
     <>
       <Text style={styles.title}>Reset Password</Text>
       <Text style={styles.subtitle}>
         Enter your email address and we'll send you instructions to reset your password.
       </Text>
-
+  
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
@@ -338,50 +381,96 @@ export default function LoginSignupScreen({ route, navigation }) {
           autoCapitalize="none"
           editable={!isLoading}
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailError && <Text style={styles.errorText}>{emailError}</Text>}
       </View>
-
-      <View style={{ gap: 16 }}>
-        <Button
-          title={isLoading ? "Sending..." : "Send Reset Link"}
+  
+      <View style={styles.buttonContainer}>
+        {/* Send Reset Link Button */}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            isLoading && styles.disabledButton,
+          ]}
           onPress={handleForgotPassword}
           disabled={isLoading}
-        />
-
-        <Button
-          title="Back to Login"
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isLoading && styles.disabledText,
+            ]}
+          >
+            {isLoading ? 'Sending...' : 'Send Reset Link'}
+          </Text>
+        </TouchableOpacity>
+  
+        {/* Back to Login Button */}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.secondaryButton, 
+          ]}
           onPress={() => {
             setIsForgotPassword(false);
             setEmail('');
             setEmailError('');
           }}
           disabled={isLoading}
-        />
+        >
+          <Text style={styles.buttonText}>Back to Login</Text>
+        </TouchableOpacity>
       </View>
     </>
-);
+  );
+  
 
-  // Render main login/signup screen
+ 
   const renderLoginSignupScreen = () => (
     <>
       <Text style={styles.title}>
         {userType} {isLogin ? 'Login' : 'Signup'} Screen
       </Text>
-
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity onPress={() => setIsLogin(true)}>
-          <Text style={[styles.toggleText, isLogin && styles.activeToggle]}>Login</Text>
+  
+      {/* Segmented Control for Login and Signup */}
+      <View style={styles.segmentedControlContainer}>
+        <TouchableOpacity
+          style={[
+            styles.segmentedControlButton,
+            isLogin ? styles.activeSegment : styles.inactiveSegment,
+          ]}
+          onPress={() => setIsLogin(true)}
+        >
+          <Text
+            style={[
+              styles.segmentedControlText,
+              isLogin ? styles.activeSegmentText : styles.inactiveSegmentText,
+            ]}
+          >
+            Login
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIsLogin(false)}>
-          <Text style={[styles.toggleText, !isLogin && styles.activeToggle]}>Signup</Text>
+        <TouchableOpacity
+          style={[
+            styles.segmentedControlButton,
+            !isLogin ? styles.activeSegment : styles.inactiveSegment,
+          ]}
+          onPress={() => setIsLogin(false)}
+        >
+          <Text
+            style={[
+              styles.segmentedControlText,
+              !isLogin ? styles.activeSegmentText : styles.inactiveSegmentText,
+            ]}
+          >
+            Signup
+          </Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.roleText}>
-        Signing in as: {userType}
-      </Text>
-
-      {/* Name input - only show on signup */}
+  
+      {/* User Role Display */}
+      <Text style={styles.roleText}>Signing in as: {userType}</Text>
+  
+      {/* Name Input Only visible for Signup */}
       {!isLogin && (
         <View style={styles.inputContainer}>
           <TextInput
@@ -393,8 +482,8 @@ export default function LoginSignupScreen({ route, navigation }) {
           />
         </View>
       )}
-
-      {/* Email input */}
+  
+      {/* Email Input */}
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
@@ -405,39 +494,98 @@ export default function LoginSignupScreen({ route, navigation }) {
           autoCapitalize="none"
           editable={!isLoading}
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailError && <Text style={styles.errorText}>{emailError}</Text>}
       </View>
-      
-      {/* Password input */}
+  
+      {/* Password Input */}
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Password"
-          secureTextEntry
+          secureTextEntry={!passwordVisible}
           value={password}
           onChangeText={handlePasswordChange}
           editable={!isLoading}
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
         />
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+        <TouchableOpacity
+          style={styles.inputIcon}
+          onPress={() => setPasswordVisible(!passwordVisible)}
+        >
+          <Text>{passwordVisible ? '👁️' : '👁️‍🗨️'}</Text>
+        </TouchableOpacity>
+        {passwordFocused && (
+          <View>
+            <Text
+              style={{
+                color: passwordRequirements.minLength ? 'green' : 'red',
+              }}
+            >
+              • Minimum 8 characters
+            </Text>
+            <Text
+              style={{
+                color: passwordRequirements.lowercase ? 'green' : 'red',
+              }}
+            >
+              • At least 1 lowercase letter
+            </Text>
+            <Text
+              style={{
+                color: passwordRequirements.uppercase ? 'green' : 'red',
+              }}
+            >
+              • At least 1 uppercase letter
+            </Text>
+            <Text
+              style={{
+                color: passwordRequirements.number ? 'green' : 'red',
+              }}
+            >
+              • At least 1 number
+            </Text>
+            <Text
+              style={{
+                color: passwordRequirements.specialChar ? 'green' : 'red',
+              }}
+            >
+              • At least 1 special character
+            </Text>
+          </View>
+        )}
       </View>
-
-      {/* Forgot password link - only show on login */}
+  
+      {/* Forgot Password Link - Only visible for Login */}
       {isLogin && (
         <TouchableOpacity onPress={() => setIsForgotPassword(true)}>
           <Text style={styles.forgetPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
       )}
-      
-      {/* Login/Signup button */}
-      <Button
-        title={isLogin ? 'Login' : 'Signup'}
+  
+      {/* Login/Signup Button */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          isLoading && styles.disabledButton, 
+        ]}
         onPress={isLogin ? handleLogin : handleSignup}
         disabled={isLoading}
-      />
+      >
+        <Text
+          style={[
+            styles.buttonText,
+            isLoading && styles.disabledText, 
+          ]}
+        >
+          {isLogin ? 'Login' : 'Signup'}
+        </Text>
+      </TouchableOpacity>
     </>
   );
+  
 
-  // Main render method
+ 
   return (
     <View style={styles.container}>
       {isVerification 
@@ -451,7 +599,7 @@ export default function LoginSignupScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  // Main Container
+
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -460,7 +608,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFBFF',
   },
 
-  // Typography Styles
+ 
   title: {
     fontSize: 32,
     fontWeight: '800',
@@ -478,7 +626,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Toggle Styles
+ 
   toggleContainer: {
     flexDirection: 'row',
     marginBottom: 32,
@@ -511,7 +659,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Input Styles
+  
   inputContainer: {
     width: '85%',
     marginBottom: 24,
@@ -561,38 +709,74 @@ const styles = StyleSheet.create({
     top: 16,
   },
 
-  // Button Styles
-  button: {
-    width: '85%',
-    marginVertical: 12,
-    backgroundColor: '#3366FF',
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowColor: '#3366FF',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+  
+buttonContainer: {
+  alignItems: 'center',
+  marginTop: 16,
+  width: '100%',
+  gap: 16,
+},
+button: {
+  width: '40%',
+  paddingVertical: 14,
+  borderRadius: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#3366FF', 
+  shadowColor: '#000000',
+  shadowOffset: {
+    width: 0,
+    height: 4,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.3,
+  shadowOpacity: 0.3,
+  shadowRadius: 4.65,
+  elevation: 8,
+},
+buttonText: {
+  color: '#FFFFFF',
+  fontSize: 17,
+  fontWeight: '600',
+},
+disabledButton: {
+  backgroundColor: '#B0C4DE', 
+},
+disabledText: {
+  color: '#FFFFFF', 
+},
+secondaryButton: {
+  width: '40%',
+  paddingVertical: 14,
+  borderRadius: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#E4E9F2',
+  shadowColor: '#000000',
+  shadowOffset: {
+    width: 0,
+    height: 4,
   },
-  disabledButton: {
-    backgroundColor: '#EEF1F8',
-    shadowOpacity: 0,
-  },
-  disabledText: {
-    color: '#8F9BB3',
-  },
-
-  // Additional Links & Text
+  shadowOpacity: 0.15,
+  shadowRadius: 4.65,
+  elevation: 6,
+},
+secondaryButtonText: {
+  color: '#3366FF',
+  fontSize: 17,
+  fontWeight: '600',
+},
+tertiaryButton: {
+  width: '40%',
+  paddingVertical: 14,
+  borderRadius: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'transparent', 
+},
+tertiaryButtonText: {
+  color: '#4A4B57', 
+  fontSize: 17,
+  fontWeight: '600',
+},  
   forgetPasswordText: {
     fontSize: 15,
     color: '#3366FF',
@@ -616,7 +800,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Divider Styles
+ 
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -635,7 +819,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Social Buttons
+  
   socialButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -662,7 +846,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Utility Styles
+  
   centerText: {
     textAlign: 'center',
   },
@@ -677,4 +861,47 @@ const styles = StyleSheet.create({
     color: '#1A1A2F',
     letterSpacing: 0.2,
   },
+  segmentedControlContainer: {
+  flexDirection: 'row',
+  width: '85%',
+  backgroundColor: '#F0F3FA',
+  borderRadius: 12,
+  padding: 4,
+  marginBottom: 24,
+  borderWidth: 1,
+  borderColor: '#E4E9F2',
+},
+segmentedControlButton: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+},
+segmentedControlText: {
+  fontSize: 16,
+  fontWeight: '600',
+  letterSpacing: 0.3,
+},
+activeSegment: {
+  backgroundColor: '#3366FF',
+},
+inactiveSegment: {
+  backgroundColor: 'transparent',
+},
+activeSegmentText: {
+  color: '#FFFFFF',
+},
+inactiveSegmentText: {
+  color: '#8F9BB3',
+},
+inputIcon: {
+  position: 'absolute',
+  right: 16,
+  top: 16,
+  height: 24,
+  width: 24,
+  alignItems: 'center',
+  justifyContent: 'center'
+}
+
 });

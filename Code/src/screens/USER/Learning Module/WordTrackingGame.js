@@ -1,4 +1,3 @@
-// LetterTracingGame.js
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -10,12 +9,12 @@ import {
   Dimensions,
 } from 'react-native';
 
-// Step 1: Define constants and data
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHECKPOINT_RADIUS = 30;  // Detection radius for reaching checkpoints
+const CHECKPOINT_RADIUS = 30;  
 const REQUIRED_CHECKPOINTS = 1;
 
-// Step 2: Define the alphabet data structure with checkpoints
+
 const ALPHABETS = [
     {
       letter: 'A',
@@ -327,20 +326,19 @@ const ALPHABETS = [
   
   
 export default function LetterTracingGame({ navigation }) {
-  // Step 3: Set up state management
-  const [currentIndex, setCurrentIndex] = useState(0);  // Current letter index
-  const [tracedPath, setTracedPath] = useState([]);    // Points traced by user
-  const [isDrawing, setIsDrawing] = useState(false);   // Drawing state
-  const [showWord, setShowWord] = useState(false);     // Word display state
+  const [currentIndex, setCurrentIndex] = useState(0);  
+  const [tracedPath, setTracedPath] = useState([]);    
+  const [isDrawing, setIsDrawing] = useState(false);   
+  const [showWord, setShowWord] = useState(false);     
   const [checkpoints, setCheckpoints] = useState([...ALPHABETS[currentIndex].checkpoints]);
-  const completionTimeout = useRef(null);  // Timeout ref for auto-advancement
+  const completionTimeout = useRef(null);  
 
-  // Step 4: Initialize/reset game state when letter changes
+  
   useEffect(() => {
     setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
     setTracedPath([]);
     setShowWord(false);
-    // Cleanup timeout on letter change
+    
     return () => {
       if (completionTimeout.current) {
         clearTimeout(completionTimeout.current);
@@ -348,17 +346,17 @@ export default function LetterTracingGame({ navigation }) {
     };
   }, [currentIndex]);
 
-  // Step 5: Implement completion checking logic
+  
   const checkCompletion = (updatedCheckpoints) => {
     const allReached = updatedCheckpoints.every(cp => cp.reached);
     
     if (allReached) {
       setShowWord(true);
-      // Clear existing timeout if any
+     
       if (completionTimeout.current) {
         clearTimeout(completionTimeout.current);
       }
-      // Set timeout for auto-advancement
+     
       completionTimeout.current = setTimeout(() => {
         if (currentIndex < ALPHABETS.length - 1) {
           setCurrentIndex(prev => prev + 1);
@@ -367,7 +365,7 @@ export default function LetterTracingGame({ navigation }) {
     }
   };
 
-  // Step 6: Implement checkpoint detection
+ 
   const checkPointReached = (point) => {
     let updatedCheckpoints = [...checkpoints];
     let changed = false;
@@ -392,7 +390,7 @@ export default function LetterTracingGame({ navigation }) {
     }
   };
 
-  // Step 7: Implement touch handling with PanResponder
+  
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
@@ -421,7 +419,7 @@ export default function LetterTracingGame({ navigation }) {
     },
   });
 
-  // Step 8: Implement control handlers
+  
   const handleReset = () => {
     setTracedPath([]);
     setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
@@ -443,7 +441,7 @@ export default function LetterTracingGame({ navigation }) {
     }
   };
 
-  // Step 9: Render the UI
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -543,7 +541,7 @@ export default function LetterTracingGame({ navigation }) {
   );
 }
 
-// Step 10: Define styles
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

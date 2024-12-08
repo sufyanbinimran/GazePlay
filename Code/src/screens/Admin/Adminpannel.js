@@ -1,7 +1,7 @@
 const BASE_URL = 'http://localhost:5001';
 let currentToken = null;
 
-// Dynamic document fields for different collections
+// for different collections
 const collectionFields = {
     users: [
         { name: 'name', type: 'text', required: true },
@@ -54,6 +54,8 @@ function toggleSections() {
 }
 
 function logout() {
+    const dataTable = document.getElementById('data-table');
+    dataTable.classList.remove('visible');
     currentToken = null;
     localStorage.removeItem('token');
     toggleSections();
@@ -61,6 +63,11 @@ function logout() {
 
 async function showCollections() {
     const collectionSelect = document.getElementById('collection-select').value;
+    const dataTable = document.getElementById('data-table');
+    
+    // Show table
+    dataTable.classList.add('visible');
+    
     await loadCollectionData(collectionSelect);
 }
 
@@ -230,14 +237,11 @@ async function deleteDocument(docId, buttonElement) {
     }
 }
 
-// Check if token exists on page load
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (token) {
         currentToken = token;
         toggleSections();
     }
-
-    // Add event listener to "View Collections" button
     document.getElementById('view-collections-btn').addEventListener('click', showCollections);
 });

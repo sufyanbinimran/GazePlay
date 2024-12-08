@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { Activity, MapPin, Zap, BookOpen } from 'lucide-react-native';
-
+import { Activity, MapPin, Zap, BookOpen, MessageCircle } from 'lucide-react-native';
 
 export default function ActivityConsole({ navigation }) {
   const activityItems = [
@@ -14,10 +13,10 @@ export default function ActivityConsole({ navigation }) {
     },
     {
       id: 2,
-      title: 'Places',
-      icon: <MapPin size={24} color="#ffffff" />,
-      description: 'Discover and save important locations',
-      backgroundColor: '#2196F3',
+      title: 'QuickPhrases',
+      icon: <MessageCircle size={24} color="#ffffff" />,
+      description: 'Quickly access and share pre-defined phrases',
+      backgroundColor: '#673AB7',
     },
     {
       id: 3,
@@ -28,6 +27,13 @@ export default function ActivityConsole({ navigation }) {
     },
     {
       id: 4,
+      title: 'Places',
+      icon: <MapPin size={24} color="#ffffff" />,
+      description: 'Discover and save important locations',
+      backgroundColor: '#2196F3',
+    },
+    {
+      id: 5,
       title: 'Topics',
       icon: <BookOpen size={24} color="#ffffff" />,
       description: 'Browse through various topics',
@@ -49,7 +55,6 @@ export default function ActivityConsole({ navigation }) {
               key={item.id}
               style={[styles.card, { backgroundColor: item.backgroundColor }]}
               onPress={() => {
-                // Navigate to respective screens (to be implemented)
                 navigation.navigate(`${item.title.replace(/\s+/g, '')}Screen`);
               }}
             >
@@ -65,7 +70,6 @@ export default function ActivityConsole({ navigation }) {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

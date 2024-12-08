@@ -12,7 +12,7 @@ export default function LearningHub({ navigation }) {
       
       <View style={styles.content}>
         <TouchableOpacity 
-          style={styles.gameCard}
+          style={[styles.gameCard, styles.cardShadow]}
           onPress={() => navigation.navigate('WordTrackingGame')}
         >
           <View style={styles.iconContainer}>
@@ -22,6 +22,21 @@ export default function LearningHub({ navigation }) {
             <Text style={styles.gameTitle}>Word Tracking Game</Text>
             <Text style={styles.gameDescription}>
               Enhance your vocabulary and tracking skills
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.gameCard, styles.cardShadow, { backgroundColor: '#4CAF50', marginTop: 16 }]}
+          onPress={() => navigation.navigate('IconQuizGame')}
+        >
+          <View style={styles.iconContainer}>
+            <Icon name="puzzle-outline" size={32} color="#ffffff" />
+          </View>
+          <View style={styles.gameInfo}>
+            <Text style={styles.gameTitle}>Icon Learning Game</Text>
+            <Text style={styles.gameDescription}>
+              Learn icons through animatation
             </Text>
           </View>
         </TouchableOpacity>
@@ -40,6 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    marginBottom: 16, 
   },
   headerTitle: {
     fontSize: 24,
@@ -60,6 +76,8 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  cardShadow: {  
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
