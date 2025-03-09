@@ -4,32 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Admin Panel</title>
-    <link rel="stylesheet" href="adminpannel.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="adminpannel.css">
 </head>
 <body>
     <div id="login-section" class="login-container">
-        <h2>Database Admin Login</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login</button>
-        <div id="error-message"></div>
+        <div class="login-card">
+            <div class="login-header">
+                <i class="fas fa-database login-icon"></i>
+                <h2>Database Admin Login</h2>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="Enter your email">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="Enter your password">
+                    </div>
+                </div>
+                <button class="login-btn" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div id="error-message" class="error-alert"></div>
+            </div>
+        </div>
     </div>
 
     <div id="admin-dashboard" class="hidden">
         <div class="sidebar">
-            <h2>Database Admin</h2>
+            <div class="sidebar-header">
+                <i class="fas fa-cogs"></i>
+                <h2>Database Admin</h2>
+            </div>
             <ul class="sidebar-menu">
-                <li onclick="showCollections()">View Collections</li>
-                <li onclick="showAddDocumentModal()">Add Document</li>
-                <li onclick="logout()">Logout</li>
+                <li onclick="showCollections()">
+                    <i class="fas fa-table menu-icon"></i>
+                    <span>View Collections</span>
+                </li>
+                <li onclick="showAddDocumentModal()">
+                    <i class="fas fa-plus-circle menu-icon"></i>
+                    <span>Add Document</span>
+                </li>
+                <li onclick="logout()">
+                    <i class="fas fa-sign-out-alt menu-icon"></i>
+                    <span>Logout</span>
+                </li>
             </ul>
         </div>
         <div class="content">
+            <div class="page-header">
+                <h1>Database Management</h1>
+            </div>
             <div class="collection-selector">
                 <label for="collection-select">Select Collection: </label>
-                <select id="collection-select" onchange="loadCollectionData()">
-                    <option value="users">Users</option>
-                </select>
+                <div class="select-wrapper">
+                    <select id="collection-select" onchange="loadCollectionData(this.value)">
+                        <option value="users">Users</option>
+                    </select>
+                    <button id="view-collections-btn" class="view-collections-btn">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </div>
             </div>
             <div id="data-section" class="data-section">
                 <table id="data-table" class="data-table">
@@ -48,26 +91,43 @@
 
     <div id="add-document-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDocumentModal()">&times;</span>
-            <h2>Add New Document</h2>
+            <div class="modal-header">
+                <h2>Add New Document</h2>
+                <span class="close-btn" onclick="closeAddDocumentModal()">
+                    <i class="fas fa-times"></i>
+                </span>
+            </div>
             <form id="add-document-form">
-                <select id="document-collection" onchange="updateDocumentFields()">
-                    <option value="users">Users</option>
-                </select>
+                <div class="form-group">
+                    <label for="document-collection">Collection Type</label>
+                    <div class="select-wrapper">
+                        <select id="document-collection" onchange="updateDocumentFields()">
+                            <option value="users">Users</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="dynamic-fields"></div>
-                <button type="button" onclick="addDocument()">Add Document</button>
+                <button type="button" class="submit-btn" onclick="addDocument()">
+                    <i class="fas fa-plus-circle"></i> Add Document
+                </button>
             </form>
         </div>
     </div>
 
     <div id="view-document-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeViewDocumentModal()">&times;</span>
-            <h2>Document Details</h2>
-            <pre id="document-details"></pre>
+            <div class="modal-header">
+                <h2>Document Details</h2>
+                <span class="close-btn" onclick="closeViewDocumentModal()">
+                    <i class="fas fa-times"></i>
+                </span>
+            </div>
+            <div class="document-details-container">
+                <pre id="document-details"></pre>
+            </div>
         </div>
     </div>
 
-    <script src="Adminpannel.js"></script> 
+    <script src="Adminpannel.js"></script>
 </body>
 </html>
