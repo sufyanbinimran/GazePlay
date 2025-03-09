@@ -11,7 +11,8 @@ import {
 
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHECKPOINT_RADIUS = 30;  
+// Significantly increased checkpoint radius for better camera detection with eye blinks
+const CHECKPOINT_RADIUS = 60;  // Increased from 40
 const REQUIRED_CHECKPOINTS = 1;
 
 
@@ -325,307 +326,330 @@ const ALPHABETS = [
   ];
   
   
-export default function LetterTracingGame({ navigation }) {
-  const [currentIndex, setCurrentIndex] = useState(0);  
-  const [tracedPath, setTracedPath] = useState([]);    
-  const [isDrawing, setIsDrawing] = useState(false);   
-  const [showWord, setShowWord] = useState(false);     
-  const [checkpoints, setCheckpoints] = useState([...ALPHABETS[currentIndex].checkpoints]);
-  const completionTimeout = useRef(null);  
-
+  export default function LetterTracingGame({ navigation }) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [tracedPath, setTracedPath] = useState([]);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [showWord, setShowWord] = useState(false);
+    const [checkpoints, setCheckpoints] = useState([...ALPHABETS[currentIndex].checkpoints]);
+    const completionTimeout = useRef(null);
   
-  useEffect(() => {
-    setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
-    setTracedPath([]);
-    setShowWord(false);
-    
-    return () => {
-      if (completionTimeout.current) {
-        clearTimeout(completionTimeout.current);
+    useEffect(() => {
+      setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
+      setTracedPath([]);
+      setShowWord(false);
+  
+      return () => {
+        if (completionTimeout.current) {
+          clearTimeout(completionTimeout.current);
+        }
+      };
+    }, [currentIndex]);
+  
+    const checkCompletion = (updatedCheckpoints) => {
+      const allReached = updatedCheckpoints.every(cp => cp.reached);
+  
+      if (allReached) {
+        setShowWord(true);
+  
+        if (completionTimeout.current) {
+          clearTimeout(completionTimeout.current);
+        }
+  
+        completionTimeout.current = setTimeout(() => {
+          if (currentIndex < ALPHABETS.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+          }
+        }, 2000);
       }
     };
-  }, [currentIndex]);
-
   
-  const checkCompletion = (updatedCheckpoints) => {
-    const allReached = updatedCheckpoints.every(cp => cp.reached);
-    
-    if (allReached) {
-      setShowWord(true);
-     
-      if (completionTimeout.current) {
-        clearTimeout(completionTimeout.current);
-      }
-     
-      completionTimeout.current = setTimeout(() => {
-        if (currentIndex < ALPHABETS.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-        }
-      }, 2000);
-    }
-  };
-
- 
-  const checkPointReached = (point) => {
-    let updatedCheckpoints = [...checkpoints];
-    let changed = false;
-
-    updatedCheckpoints = updatedCheckpoints.map((checkpoint) => {
-      if (!checkpoint.reached) {
-        const distance = Math.sqrt(
-          Math.pow(point.x - checkpoint.x, 2) + 
-          Math.pow(point.y - checkpoint.y, 2)
-        );
-        if (distance < CHECKPOINT_RADIUS) {
-          changed = true;
-          return { ...checkpoint, reached: true };
-        }
-      }
-      return checkpoint;
-    });
-
-    if (changed) {
-      setCheckpoints(updatedCheckpoints);
-      checkCompletion(updatedCheckpoints);
-    }
-  };
-
+    const checkPointReached = (point) => {
+      let updatedCheckpoints = [...checkpoints];
+      let changed = false;
   
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt, gestureState) => {
-      setIsDrawing(true);
-      const point = {
-        x: evt.nativeEvent.locationX,
-        y: evt.nativeEvent.locationY,
-      };
-      setTracedPath([point]);
-      checkPointReached(point);
-    },
-    onPanResponderMove: (evt, gestureState) => {
-      if (isDrawing) {
+      updatedCheckpoints = updatedCheckpoints.map((checkpoint) => {
+        if (!checkpoint.reached) {
+          const distance = Math.sqrt(
+            Math.pow(point.x - checkpoint.x, 2) + 
+            Math.pow(point.y - checkpoint.y, 2)
+          );
+          if (distance < CHECKPOINT_RADIUS) {
+            changed = true;
+            return { ...checkpoint, reached: true };
+          }
+        }
+        return checkpoint;
+      });
+  
+      if (changed) {
+        setCheckpoints(updatedCheckpoints);
+        checkCompletion(updatedCheckpoints);
+      }
+    };
+  
+    const panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt, gestureState) => {
+        setIsDrawing(true);
         const point = {
           x: evt.nativeEvent.locationX,
           y: evt.nativeEvent.locationY,
         };
-        setTracedPath(prev => [...prev, point]);
+        setTracedPath([point]);
         checkPointReached(point);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (isDrawing) {
+          const point = {
+            x: evt.nativeEvent.locationX,
+            y: evt.nativeEvent.locationY,
+          };
+          setTracedPath(prev => [...prev, point]);
+          checkPointReached(point);
+        }
+      },
+      onPanResponderRelease: () => {
+        setIsDrawing(false);
+        checkCompletion(checkpoints);
+      },
+    });
+  
+    const handleReset = () => {
+      setTracedPath([]);
+      setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
+      setShowWord(false);
+      if (completionTimeout.current) {
+        clearTimeout(completionTimeout.current);
       }
-    },
-    onPanResponderRelease: () => {
-      setIsDrawing(false);
-      checkCompletion(checkpoints);
-    },
-  });
-
+    };
   
-  const handleReset = () => {
-    setTracedPath([]);
-    setCheckpoints([...ALPHABETS[currentIndex].checkpoints]);
-    setShowWord(false);
-    if (completionTimeout.current) {
-      clearTimeout(completionTimeout.current);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < ALPHABETS.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    }
-  };
-
+    const handlePrevious = () => {
+      if (currentIndex > 0) {
+        setCurrentIndex(prev => prev - 1);
+      }
+    };
   
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Trace the Letter!</Text>
-      </View>
-
-      {/* Progress indicator */}
-      <View style={styles.progressBar}>
-        <Text style={styles.progressText}>
-          {currentIndex + 1} / {ALPHABETS.length}
-        </Text>
-      </View>
-
-      {/* Main letter display and tracing area */}
-      <View style={styles.letterContainer}>
-        {/* Background letter */}
-        <Text style={[
-          styles.outlineLetter,
-          { color: ALPHABETS[currentIndex].color + '40' }
-        ]}>
-          {ALPHABETS[currentIndex].letter}
-        </Text>
-
-        {/* Tracing canvas */}
-        <View
-          style={styles.tracingCanvas}
-          {...panResponder.panHandlers}
-        >
-          {/* Traced path points */}
-          {tracedPath.map((point, index) => (
-            <View
-              key={index}
-              style={[
-                styles.tracedPoint,
-                {
-                  left: point.x - 10,
-                  top: point.y - 10,
-                  backgroundColor: ALPHABETS[currentIndex].color,
-                }
-              ]}
-            />
-          ))}
-          
-          {/* Checkpoints */}
-          {checkpoints.map((checkpoint, index) => (
-            <View
-              key={`checkpoint-${index}`}
-              style={[
-                styles.checkpoint,
-                {
-                  left: checkpoint.x - 5,
-                  top: checkpoint.y - 5,
-                  backgroundColor: checkpoint.reached ? '#4CAF50' : '#FF0000',
-                }
-              ]}
-            />
-          ))}
+    const handleNext = () => {
+      if (currentIndex < ALPHABETS.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+      }
+    };
+  
+    return (
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Trace the Letter!</Text>
         </View>
-      </View>
-
-      {/* Word display */}
-      {showWord && (
-        <View style={styles.wordContainer}>
-          <Text style={[styles.wordText, { color: ALPHABETS[currentIndex].color }]}>
-            {ALPHABETS[currentIndex].letter} for {ALPHABETS[currentIndex].word}
+  
+        {/* Progress indicator */}
+        <View style={styles.progressBar}>
+          <Text style={styles.progressText}>
+            {currentIndex + 1} / {ALPHABETS.length}
           </Text>
         </View>
-      )}
-
-      {/* Control buttons */}
-      <View style={styles.controls}>
-        <TouchableOpacity 
-          style={[styles.button, { opacity: currentIndex > 0 ? 1 : 0.5 }]} 
-          onPress={handlePrevious}
-          disabled={currentIndex === 0}
-        >
-          <Text style={styles.buttonText}>Previous</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleReset}
-        >
-          <Text style={styles.buttonText}>Reset</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.button, { opacity: currentIndex < ALPHABETS.length - 1 ? 1 : 0.5 }]} 
-          onPress={handleNext}
-          disabled={currentIndex === ALPHABETS.length - 1}
-        >
-          <Text style={styles.buttonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
-}
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  progressBar: {
-    padding: 10,
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  letterContainer: {
-    width: 300,
-    height: 300,
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  outlineLetter: {
-    fontSize: 250,
-    fontWeight: 'bold',
-    position: 'absolute',
-  },
-  tracingCanvas: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-  },
-  tracedPoint: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    opacity: 0.8,
-  },
-  checkpoint: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    opacity: 0.7,
-  },
-  wordContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  wordText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-  },
-  button: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 10,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+  
+        {/* Main letter display and tracing area */}
+        <View style={styles.letterContainer}>
+          {/* Background letter */}
+          <Text style={[
+            styles.outlineLetter,
+            { color: ALPHABETS[currentIndex].color + '80' } // Adjusted opacity to '80'
+          ]}>
+            {ALPHABETS[currentIndex].letter}
+          </Text>
+  
+          {/* Tracing canvas */}
+          <View
+            style={styles.tracingCanvas}
+            {...panResponder.panHandlers}
+          >
+            {/* Traced path points */}
+            {tracedPath.map((point, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.tracedPoint,
+                  {
+                    left: point.x - 10,
+                    top: point.y - 10,
+                    backgroundColor: ALPHABETS[currentIndex].color,
+                  }
+                ]}
+              />
+            ))}
+            
+            {/* Checkpoints */}
+            {checkpoints.map((checkpoint, index) => (
+              <View
+                key={`checkpoint-${index}`}
+                style={[
+                  styles.checkpoint,
+                  {
+                    left: checkpoint.x - 20,
+                    top: checkpoint.y - 20,
+                    backgroundColor: checkpoint.reached ? '#4CAF50' : '#FF0000',
+                  }
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+  
+        {/* Word display */}
+        {showWord && (
+          <View style={styles.wordContainer}>
+            <Text style={[styles.wordText, { color: ALPHABETS[currentIndex].color }]}>
+              {ALPHABETS[currentIndex].letter} for {ALPHABETS[currentIndex].word}
+            </Text>
+          </View>
+        )}
+  
+        {/* Control buttons */}
+        <View style={styles.controls}>
+          <TouchableOpacity 
+            style={[styles.button, { opacity: currentIndex > 0 ? 1 : 0.5 }]} 
+            onPress={handlePrevious}
+            disabled={currentIndex === 0}
+          >
+            <Text style={styles.buttonText}>Previous</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={handleReset}
+          >
+            <Text style={styles.buttonText}>Reset</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity 
+            style={[styles.button, { opacity: currentIndex < ALPHABETS.length - 1 ? 1 : 0.5 }]} 
+            onPress={handleNext}
+            disabled={currentIndex === ALPHABETS.length - 1}
+          >
+            <Text style={styles.buttonText}>Next</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Instructions */}
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsText}>
+            Touch and trace the letter by following the red dots. They will turn green when reached!
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    header: {
+      padding: 20,
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    progressBar: {
+      padding: 10,
+      alignItems: 'center',
+    },
+    progressText: {
+      fontSize: 16,
+      color: '#666',
+    },
+    letterContainer: {
+      width: 300,
+      height: 300,
+      alignSelf: 'center',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    outlineLetter: {
+      fontSize: 250,
+      fontWeight: 'bold',
+      position: 'absolute',
+    },
+    tracingCanvas: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'transparent',
+    },
+    tracedPoint: {
+      position: 'absolute',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      opacity: 0.8,
+    },
+    checkpoint: {
+      position: 'absolute',
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      opacity: 1,
+      borderWidth: 3,
+      borderColor: 'white',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.5,
+      shadowRadius: 5,
+      elevation: 8,
+    },
+    wordContainer: {
+      alignItems: 'center',
+      padding: 20,
+    },
+    wordText: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      marginBottom: 20,
+    },
+    controls: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      padding: 20,
+      position: 'absolute',
+      bottom: 20,
+      left: 0,
+      right: 0,
+    },
+    button: {
+      backgroundColor: '#4CAF50',
+      padding: 15,
+      borderRadius: 10,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    buttonText: {
+      color: '#FFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    instructionsContainer: {
+      position: 'absolute',
+      bottom: 80,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      padding: 10,
+    },
+    instructionsText: {
+      fontSize: 14,
+      color: '#666',
+      textAlign: 'center',
+    },
+  }); 

@@ -36,7 +36,22 @@ export default function LearningHub({ navigation }) {
           <View style={styles.gameInfo}>
             <Text style={styles.gameTitle}>Icon Learning Game</Text>
             <Text style={styles.gameDescription}>
-              Learn icons through animatation
+              Learn icons through animation
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.gameCard, styles.cardShadow, { backgroundColor: '#9C27B0', marginTop: 16 }]}
+          onPress={() => navigation.navigate('StoryGame')}
+        >
+          <View style={styles.iconContainer}>
+            <Icon name="book-open-variant" size={32} color="#ffffff" />
+          </View>
+          <View style={styles.gameInfo}>
+            <Text style={styles.gameTitle}>Story Game</Text>
+            <Text style={styles.gameDescription}>
+              Explore interactive stories and improve comprehension
             </Text>
           </View>
         </TouchableOpacity>
