@@ -1,60 +1,81 @@
+GazePlay – Setup & Requirements Guide
+🧠 Project Overview
+GazePlay is an AI-powered mobile app for children with cerebral palsy (CP) and similar impairments. It enables communication through head movements and eye blinking using OpenCV and CNN. Built using React Native (frontend) and Python Flask (backend), it includes:
 
-# GazePlay - Empowering Children with Cerebral Palsy
+🗣️ Icon-based communication
 
-GazePlay is a free mobile app designed to assist children with cerebral palsy (CP) by enabling interaction through eye movement and head gestures, replacing expensive specialized devices. The app utilizes AI-powered algorithms to provide an accessible and affordable alternative, improving quality of life and empowering communication.
+📚 Learning activities
 
-## Features
-- **Eye Movement Tracking**: Control the app using eye gestures with an intuitive interface.
-- **Head Movement Control**: Integrates head movement for cursor control, making the app more interactive.
-- **AI-Driven Accuracy**: Machine learning algorithms enhance tracking precision for better usability.
-- **Accessible Interface**: Simple and easy-to-use design for children with cerebral palsy.
-- **Personalized Learning**: Tracks progress with various activity types and offers personalized feedback.
-- **Call & Messaging**: Enables communication through an accessible interface for both users and guardians.
+😊 Mood-based story generation
 
-## Technologies Used
-- **React Native**: For building the mobile app on both Android and iOS.
-- **OpenCV**: For real-time eye tracking.
-- **AI Algorithms**: Enhances the accuracy of eye and head gesture detection.
-- **MongoDB**: Stores user data and tracks progress.
+📞 Quick contacts
 
-## Getting Started
-To get started with GazePlay, clone the repository and follow the instructions below:
+🧑‍👩‍ Guardian & Admin panels
+A free and accessible alternative to costly assistive devices like Tobii Dynavox.
 
-### Prerequisites
-- [Node.js](https://nodejs.org/)
-- [React Native](https://reactnative.dev/docs/environment-setup)
-- [MongoDB](https://www.mongodb.com/)
+📲 How to Use the App
+Step 1: Install Expo Go
+You can either:
 
-### Installation
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/sufyanbinimran/gazeplay.git
-    ```
+Use an Android emulator via Android Studio, OR
 
-2. Navigate to the project folder:
-    ```bash
-    cd gazeplay
-    ```
+Download Expo Go on your Android phone.
 
-3. Install dependencies:
-    ```bash
-    npm install
-    ```
+⚙️ React Native Setup (Frontend)
+🔧 Update Your IP
+In config.js, replace the placeholder IP with your actual local IP address.
 
-4. Run the app:
-    ```bash
-    npm start
-    ```
+bash
+Copy
+Edit
+# To get your IP:
+ipconfig
+Then, open PowerShell as Administrator and run:
 
-## Contributing
-We welcome contributions! If you'd like to improve GazePlay, feel free to fork the repository, submit issues, or create pull requests.
+bash
+Copy
+Edit
+setx /M REACT_NATIVE_PACKAGER_HOSTNAME 192.168.0.104
+Replace 192.168.0.104 with your actual IP.
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+♻️ Restart your IDE (e.g., VS Code) before proceeding.
+📂 Open Two Terminals
+Terminal 1: Start Frontend
+bash
+Copy
+Edit
+cd code/
+cd src/
+npm start
+Terminal 2: Start Backend (MongoDB Connection)
+bash
+Copy
+Edit
+cd code/
+cd Backend/
+npm start
+🛠️ Accessing Admin Panel
+Open the admin panel HTML file in your browser (Live Server or double-click to open in browser).
 
-## Acknowledgements
-- Special thanks to the developers and researchers behind assistive technologies, making this project possible.
+🧠 Head Tracking & Mood Detection (Python Side)
+💡 Use a Separate IDE (e.g., PyCharm)
+Step 1: Create and Activate Virtual Environment
+bash
+Copy
+Edit
+python -m venv venv
+.\venv\Scripts\activate  # For Windows
+Step 2: Install Python Dependencies
+bash
+Copy
+Edit
+pip install -r requirements.txt
+Step 3: Mood Detection Model
+Place the FER_model.h5 file (CNN model for mood detection) in the same directory.
 
----
-
-For more details or support, visit the [GitHub Repository](https://github.com/sufyanbinimran/gazeplay).
+Step 4: Run Flask Server
+bash
+Copy
+Edit
+python "Head Tracking Flask Server.py"
+This will launch the server and connect with the React Native frontend.
