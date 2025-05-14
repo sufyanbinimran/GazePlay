@@ -87,19 +87,31 @@ async function loadCollectionData(collection) {
         const data = await response.json();
 
         if (data.status === 'ok') {
+            // Update table headers for the new format
+            const tableHead = document.querySelector('#data-table thead tr');
+            tableHead.innerHTML = `
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            `;
+
             data[collection].forEach(doc => {
                 const row = document.createElement('tr');
-                const docString = JSON.stringify(doc, null, 2);
-
-                const deleteButton = doc.role !== 'admin' ? 
-                    `<button class="action-btn delete-btn" onclick='deleteDocument("${doc._id}", this)'>Delete</button>` : 
-                    '';
-
+                
+                // Only show essential info in the main table
                 row.innerHTML = `
-                    <td><pre>${docString}</pre></td>
-                    <td>
-                        <button class="action-btn view-btn" onclick='viewDocument(${JSON.stringify(doc).replace(/"/g, "&quot;")})'>View</button>
-                        ${deleteButton}
+                    <td>${doc._id.substring(0, 8)}...</td>
+                    <td>${doc.name || 'N/A'}</td>
+                    <td>${doc.email || 'N/A'}</td>
+                    <td><span class="user-role ${doc.role}">${doc.role || 'N/A'}</span></td>
+                    <td class="action-cell">
+                        <button class="action-btn view-btn" onclick='viewDocument(${JSON.stringify(doc).replace(/"/g, "&quot;")})'><i class="fas fa-eye"></i> View</button>
+                        <button class="action-btn details-btn" onclick='viewPersonalDetails(${JSON.stringify(doc).replace(/"/g, "&quot;")})'><i class="fas fa-user"></i> Details</button>
+                        ${doc.role !== 'admin' ? 
+                            `<button class="action-btn delete-btn" onclick='deleteDocument("${doc._id}", this)'><i class="fas fa-trash"></i> Delete</button>` : 
+                            ''}
                     </td>
                 `;
                 dataList.appendChild(row);
@@ -117,12 +129,112 @@ async function loadCollectionData(collection) {
 function viewDocument(doc) {
     const viewModal = document.getElementById('view-document-modal');
     const detailsElement = document.getElementById('document-details');
-    detailsElement.textContent = JSON.stringify(doc, null, 2);
+    
+    // Create formatted HTML for the basic user information
+    const formattedHTML = `
+        <div class="user-view-info">
+            <div class="info-row">
+                <div class="info-label">ID:</div>
+                <div class="info-value">${doc._id || 'N/A'}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Name:</div>
+                <div class="info-value">${doc.name || 'N/A'}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value">${doc.email || 'N/A'}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Role:</div>
+                <div class="info-value">
+                    <span class="user-role-badge ${doc.role}">${doc.role || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Replace the JSON with our formatted HTML
+    detailsElement.innerHTML = formattedHTML;
     viewModal.style.display = 'block';
+}
+
+function viewPersonalDetails(doc) {
+    const personalModal = document.getElementById('personal-details-modal');
+    const personalDetailsContent = document.getElementById('personal-details-content');
+    
+    // Create a structured view of personal details
+    const personalInfo = `
+        <div class="detail-section">
+            <h3>Personal Information</h3>
+            <div class="detail-row">
+                <div class="detail-label">Age:</div>
+                <div class="detail-value">${doc.age || 'Not specified'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Condition:</div>
+                <div class="detail-value">${doc.condition || 'Not specified'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Communication Method:</div>
+                <div class="detail-value">${doc.communicationMethod || 'Not specified'}</div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Preferences</h3>
+            <div class="detail-row">
+                <div class="detail-label">Likes:</div>
+                <div class="detail-value">${formatArrayOrObject(doc.likes) || 'Not specified'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Dislikes:</div>
+                <div class="detail-value">${formatArrayOrObject(doc.dislikes) || 'Not specified'}</div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Family Information</h3>
+            <div class="detail-value">${formatArrayOrObject(doc.familyInfo) || 'Not specified'}</div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Account Details</h3>
+            <div class="detail-row">
+                <div class="detail-label">Reset Password Token:</div>
+                <div class="detail-value">${doc.resetPasswordToken || 'None'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Reset Password Expires:</div>
+                <div class="detail-value">${doc.resetPasswordExpires ? new Date(doc.resetPasswordExpires).toLocaleString() : 'Not set'}</div>
+            </div>
+        </div>
+    `;
+    
+    personalDetailsContent.innerHTML = personalInfo;
+    personalModal.style.display = 'block';
+}
+
+function formatArrayOrObject(data) {
+    if (!data) return '';
+    
+    if (Array.isArray(data)) {
+        if (data.length === 0) return 'None';
+        return `<ul>${data.map(item => `<li>${typeof item === 'object' ? JSON.stringify(item) : item}</li>`).join('')}</ul>`;
+    } else if (typeof data === 'object') {
+        return `<ul>${Object.entries(data).map(([key, value]) => 
+            `<li><strong>${key}:</strong> ${typeof value === 'object' ? JSON.stringify(value) : value}</li>`).join('')}</ul>`;
+    }
+    
+    return data;
 }
 
 function closeViewDocumentModal() {
     document.getElementById('view-document-modal').style.display = 'none';
+}
+
+function closePersonalDetailsModal() {
+    document.getElementById('personal-details-modal').style.display = 'none';
 }
 
 function showAddDocumentModal() {

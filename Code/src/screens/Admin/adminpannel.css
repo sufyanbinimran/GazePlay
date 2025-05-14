@@ -620,3 +620,210 @@ body {
         margin-left: 70px;
     }
 }
+/* User card styling */
+.data-table {
+    table-layout: fixed;
+}
+
+.data-table th {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 20px;
+}
+
+.data-table td {
+    padding: 16px 20px;
+    vertical-align: middle;
+}
+
+/* Style for role badges */
+.user-role {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.user-role.admin {
+    background-color: #fb8c00;
+    color: white;
+}
+
+.user-role.user {
+    background-color: #4caf50;
+    color: white;
+}
+
+.user-role.guardian {
+    background-color: #2196f3;
+    color: white;
+}
+
+/* Action buttons styling */
+.action-cell {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.details-btn {
+    background-color: #9c27b0;
+    color: white;
+}
+
+.details-btn:hover {
+    background-color: #7b1fa2;
+}
+
+/* Personal details modal */
+#personal-details-modal .modal-content {
+    max-width: 600px;
+}
+
+.detail-section {
+    margin-bottom: 24px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 4px solid #1abc9c;
+}
+
+.detail-section h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #34495e;
+    width: 30%;
+    min-width: 150px;
+}
+
+.detail-value {
+    color: #2c3e50;
+    flex: 1;
+}
+
+.detail-value ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.detail-value li {
+    margin-bottom: 5px;
+}
+
+/* Empty state styling */
+.empty-message {
+    text-align: center;
+    padding: 30px;
+    color: #95a5a6;
+    font-style: italic;
+}
+.user-view-info {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.info-row {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    width: 100px;
+    color: #34495e;
+}
+
+.info-value {
+    flex: 1;
+    color: #2c3e50;
+}
+
+.user-role-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.user-role-badge.admin {
+    background-color: #fb8c00;
+    color: white;
+}
+
+.user-role-badge.user {
+    background-color: #4caf50;
+    color: white;
+}
+
+.user-role-badge.guardian {
+    background-color: #2196f3;
+    color: white;
+}
+
+/* Remove the pre formatting from the document details */
+#document-details {
+    white-space: normal;
+    background: none;
+    padding: 0;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Styling for personal details modal */
+.detail-section {
+    margin-bottom: 24px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 4px solid #1abc9c;
+}
+
+.detail-section h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #34495e;
+    width: 30%;
+    min-width: 150px;
+}
